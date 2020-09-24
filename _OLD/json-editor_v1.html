@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script
+			  src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+			  integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs="
+              crossorigin="anonymous">
+    </script>
+		
+    <style>
+        table, th, td{
+            border:1px solid  black;
+        }
+        th, td{
+            padding:10px;
+        }
+        .row-data:hover{
+            background-color: lightblue;
+        }
+    </style>
+</head>
+<body>
+    <!--<div id="app">
+        <input type="file" onchange="readFile(event)" id="uploadFile" />
+    </div>-->
+    <div id="container">
+        <table id="js-json-attribute-table">
+            <tbody id="js-json-attr-tbody">
+                <tr>
+                    <td><b>Key</b></td>
+                    <td><b>Type</b></td>
+                    <td><b>Options:</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="js-edit-container" style="display:flex; margin-top:50px;">
+        <form id="js-form-editor" style="width:350px; border:1px solid black; padding:20px">
+            <h1>Editing <span id="js-key-name"></span></h1>
+            <div id="js-key">Key: <input id="js-key-input" type="text" disabled /></div>
+            <div id="js-type">Type:
+                <select id="js-type-select"></select>
+            </div>
+            <div id="js-options-select-div"></div>
+            <button type="submit" onclick="submitTableRowEdit(event)">Submit Edit</button>
+        </form>
+        <div id="js-edit-options-container" style="display:none;width:300px; padding:20px; border:1px solid black; margin-left:50px;">
+            <h3 align="center">Add an Option</h3>
+            <div id="js-input-options"></div>
+            <div id="js-edit-options-buttons"></div>
+        </div>
+    </div>
+
+    <script>
+        let JSON_FILE = {
+            "attributes": {
+                "id": { 
+                    "type": "integer" 
+                },
+                "name": {
+                    "type": "string"
+                },
+                "account": {
+                    "type": "select",
+                    "options": ["guest","member", "admin"]
+                },
+                "email": {
+                    "type": "email"
+                },
+                "balance": {
+                    "type": "float"
+                },
+                "created_at": {
+                    "type": "datetime"
+                }
+            }
+        }
+        
+        // Get the Value of JSON ATTRIBUES
+        let jsonAttributes = JSON_FILE.attributes;
+        let table = document.getElementById('js-json-attribute-table');
+        let tbody = document.getElementById('js-json-attr-tbody');
+
+        // Get the all Keys and all their Vallues
+        let jsonObjKeys =Object.keys(jsonAttributes);
+        let jsonObjValues = Object.values(jsonAttributes);
+        let testObj = [{"id": {"type": "integer", "options": null}}, {"name": {"type": "string"}}];
+        //console.log(JSON_FILE)
+        
+        // This function appends any Elements to the Table
+        const appendElemsToTable = (tableRowElem, tableCellKeyElem, tableCellValueElem, tableCellSelectElem) => {
+                tableRowElem.append(tableCellKeyElem);
+                tableRowElem.append(tableCellValueElem);
+                tableRowElem.append(tableCellSelectElem);
+                tableRowElem.classList.add('row-data');
+                tbody.append(tableRowElem)
+        }
+        // This Function Generates all Table Elements to create the Table
+        const generateTableRowAndCellCurrentData = (key, value, idKey) => {
+            let newTableRow = document.createElement('tr');
+            newTableRow.setAttribute("id", "row-" + idKey)
+            let newTableCellValue = document.createElement('td');
+            let newTableCellKey = document.createElement('td');
+            let newTableCellSelect = document.createElement('td');
+            newTableCellKey.setAttribute("rel", key);
+            newTableCellKey.setAttribute("id", `key-${idKey}`);
+            newTableCellKey.classList.add('key')
+            newTableCellValue.setAttribute("rel", value.type);
+            newTableCellValue.setAttribute("id", `value-${idKey}`)
+            newTableCellSelect.setAttribute("rel", "null");
+            newTableCellSelect.setAttribute("id", `options-${idKey}`)
+            newTableCellKey.innerHTML = key;
+            newTableCellValue.innerHTML = value.type;
+            
+            //if "select" if a value, generate an options box
+            if(value.type === "select"){
+                // 1. new elem is options box
+                // 2. insert array of options into box
+                // 3. append to the table
+                let selectOptionsArray = value.options;
+                let selectElem = document.createElement('select');
+                selectElem.setAttribute('id', `row-${idKey}-select`)
+                selectOptionsArray.map(option => {
+                    let optionElem = document.createElement('option');
+                    optionElem.innerHTML = option;
+                    optionElem.value = option;
+                    optionElem.setAttribute("rel", option)
+                    selectElem.append(optionElem)
+                });
+                newTableCellSelect.setAttribute("rel", "options");
+                newTableCellSelect.append(selectElem);
+            }
+            appendElemsToTable(newTableRow, newTableCellKey, newTableCellValue, newTableCellSelect);
+        }
+        jsonObjKeys.map((item, index) => {     
+            let key = item;
+            let value = jsonObjValues[index];
+            let options = null;
+            if(value.type === "select"){
+                options = value.options;
+            }
+            const types = ['integer', 'string', 'select', 'email', 'float','datetime']
+            
+            let idKey = index;
+            //  This function adds all keys and values to the table
+            generateTableRowAndCellCurrentData(key, value, idKey);
+            $(`#row-${idKey}`).bind('click', () => {
+                // Empty child nodes from type list
+                $("#js-type-select").empty();
+                
+                // Insert the values for Key and Type
+                $('#js-key-name').text(key);
+                $('#js-key-input').val(key);
+                $('#js-form-editor').data("editor-props", [idKey, key, value.type, options]);
+
+                // Map and Insert Type Options When User clicks a row in Table
+                const MapAndInsertTypeOptions = (types, value) =>{
+                    types.map(type => {
+                    //console.log(value.type, type)
+                        if(value.type === type){
+                            $("#js-type-select").append(`<option value="${value.type}" selected>${value.type}</option>`);
+                        }
+                        else if(value.type !== type){
+                            $("#js-type-select").append(`<option value="${type}">${type}</option>`);
+                        }
+                    }) 
+                }
+                MapAndInsertTypeOptions(types, value);
+
+                // Insert Options
+                if(options === null){
+                    $("#js-options-select-div").empty();
+                }
+                else if(options !== null){
+                    $("#js-options-select-div").empty();
+                    $("#js-options-select-div").data("options", options)
+                    $("#js-options-select-div").append(`Options: <select id="js-select-options"></select>`);
+                    options.map(option => {
+                        $("#js-select-options").append(`<option value="${option}">${option}</option>`)
+                    })
+                    $("#js-options-select-div").append('<button onclick="EditOptions(event)">Edit Options</button>')
+                }
+            })
+        });
+    
+    // !! All Functions for "Add an Option" Container
+        // Edit Options Button Function - Populates "Add an Option" Container
+        const EditOptions = (event) => {
+            event.preventDefault();
+            let optionId = 0;
+            $('#js-edit-options-container').css("display", "inline-block");
+            let optionsData = $('#js-options-select-div').data("options");
+            optionsData.map((option, index) => {
+                optionId = index;
+                $('#js-input-options').append(`<input id="add-option-${optionId}" class="edit-option" type="text" value="${option}" /> <br />`);
+            });
+            $('#js-edit-options-buttons').append(`<button onclick="addOption()">+ Options</button> <br /> <br />`)
+            $('#js-edit-options-buttons').append(`<button onclick="sendOptions()">Send Options</button>`)
+        }
+    
+        const addOption = () => {
+            let optionId = 0;
+            $("input[class=edit-option]").each(function() {
+                optionId++
+            }) 
+            $('#js-input-options').append(`<input id="add-option-${optionId}" class="edit-option" type="text" value="" /> <br />`);
+        }
+        const sendOptions = () => {
+            let optionValues = [];
+            $("input[class=edit-option]").each(function() {
+                optionValues.push($(this).val());
+            });
+
+            // !! Validate all the inputs are not empty !!
+            let addOptionFormErrors = [];
+            optionValues.map((option, index) => {
+                if(option === ""){
+                    addOptionFormErrors.push(true);
+                    console.log("input throwing errors: ", option, index);
+                    $(`#add-option-${index}`).css("border", "2px solid red");
+                    alert("Input cannot contain an empty string!");
+                }
+                else if(option !== ""){
+                    addOptionFormErrors.push(false);
+                }
+            })
+            const validateAddOptionsForm = (currentValue) => currentValue === false;
+            
+            // If there are no Errors, Send the Data back to Editing Form
+            if(addOptionFormErrors.every(validateAddOptionsForm) === true){
+                console.log("Add options test passed");
+                $('#js-select-options').empty();
+                $("#js-options-select-div").data("options", optionValues)
+                optionValues.map(option => {
+                    $('#js-select-options').append(`<option value="${option}">${option}</option>`)
+                })
+                $("#js-input-options").empty();
+                $("#js-edit-options-buttons").empty();
+                $("#js-edit-options-container").hide();
+
+            }
+            
+        }
+
+    // SUBMIT AND EDIT A TABLE ROW OF DATA
+        // This Function is attached to the "Submit Edit" button
+        const submitTableRowEdit = event => {
+            event.preventDefault();
+            let editorProps = $("#js-form-editor").data("editor-props");
+            let thisId = editorProps[0];
+            console.log(thisId)
+            let thisKey = $("#js-key-input").val();
+            let thisType = $("#js-type-select").val();
+            let thisOptions = [];
+            
+            // If there are Options, get all the Options
+            $("#js-select-options > option").each(function() {
+                thisOptions.push($(this).val());
+            })
+
+            // If type select, push the options to the table
+            if(thisType === "select"){
+                $(`#row-${thisId}`).find("select").empty()
+                JSON_FILE.attributes[thisKey].type = thisType;
+                JSON_FILE.attributes[thisKey].options = thisOptions;
+                thisOptions.map(option => {
+                    console.log(option)
+                    $(`#row-${thisId}`).find("select").append(`<option value="${option}">${option}</option>`)
+                })
+            }
+            else if(thisType !== "select"){
+                JSON_FILE.attributes
+            }
+        }
+
+        // TODO: GENERATE AN ID FOR EACH
+
+        // TODO: FIX BUG! When clicking a select type on table, more than one click created too many dropdowns
+
+        // if Type is changed, if it is not "select", remove options
+        // TODO: fix! When changing Type, if goes from "select" to something else, store the options
+
+
+        // TODO: 
+        // 1.[] Edit a Key, Type, Option
+        // 2.[] edit options button
+        // 3.[] Create an onclick event to submit data
+            // a. grab the values and modify the json file.
+            // b. grab the values and modify the table
+            // c. check the json file to see if it's modified correctly
+
+
+    </script>
+
+</body>
+</html>

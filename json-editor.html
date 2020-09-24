@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Editor</title>
+    <script
+			  src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+			  integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs="
+              crossorigin="anonymous">
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet"> 
+    <style>
+        body {
+            background-color:darkmagenta;
+            color:ghostwhite;
+            font-family: 'Courier Prime', monospace;
+        }
+        th, td {
+            border:1px solid  darkorange;
+        }
+        th, td {
+            padding:10px;
+        }
+        table  button {
+            border:1px solid salmon;
+            padding:5px 10px;
+            background-color: transparent;
+            color:ghostwhite;
+            border-radius: 5px;
+        }
+        table button:hover {
+            background-color: rgb(207, 35, 35);
+        }
+        .row-data:hover {
+            background-color: rgba(23, 109, 196, 0.541);
+        }
+        .toggle-display {
+            display:none;
+        }
+        .add-attr-button {
+            border:1px solid salmon;
+            padding:5px 10px;
+            background-color: transparent;
+            color:ghostwhite;
+            border-radius: 5px;
+            margin-top:20px;
+            margin-left:120px;
+        }
+        .add-attr-button:disabled{
+            background-color: dimgrey;
+        }
+        .add-attr-button:hover {
+            background-color: rgb(207, 35, 35);
+        }
+        .add-row-editor {
+            border:1px solid darksalmon;
+            margin:20px 10px;
+            width:300px;
+        }
+        .add-row-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom:1px solid darksalmon;
+            background-color: rgb(238, 89, 39);
+        }
+        _button:disabled {
+            background-color: dimgrey!important;
+        }
+        .btn {
+            border:1px solid salmon;
+            padding:5px 10px;
+            background-color: transparent;
+            color:ghostwhite;
+            border-radius: 5px;
+            margin-left:5px;
+        }
+        .btn:hover {
+            background-color: rgb(207, 35, 35);
+        }
+        .del-add-row-option {
+            border:1px solid salmon;
+            padding:5px 10px;
+            background-color: transparent;
+            color:ghostwhite;
+            border-radius: 5px;
+            margin-left:5px;
+        }
+        .del-add-row-option:hover {
+            background-color: rgb(207, 35, 35);
+        }
+        .add-row-option{
+            border:1px solid salmon;
+            padding:5px 10px;
+            background-color: transparent;
+            color:ghostwhite;
+            border-radius: 5px;
+            margin-left:5px;
+        }
+        .add-row-option:hover{
+            background-color: rgb(207, 35, 35);
+        }
+        .editor-title {
+            align-self: center;
+            font-size:1.25rem;
+            margin-left:10px;
+        }
+        .button-close {
+            padding:5px;
+            border:1px solid darksalmon;
+            text-align: center;
+            width:20px;
+            background-color:darkmagenta;
+        }
+        .button-close:hover {
+            background-color: rgb(207, 35, 35);
+        }
+        .add-row-editor-content {
+            padding:10px;
+        }
+
+        .edit-row-editor {
+            border:1px solid darksalmon;
+            margin:20px 10px;
+            width:500px;
+        }
+        .edit-row-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom:1px solid darksalmon;
+            background-color: rgb(238, 89, 39);
+        }
+        .edit-row-editor-content {
+            padding:20px;
+        }
+        .edit-row-editor .form-group {
+            margin:10px;
+        }
+        .submit {
+            display:flex;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+    <!--- ADD A JSON FILE -->
+    <div id="js-load-file">
+        <h1>Load an Attributes JSON FILE</h1>
+        <input type="file" id="input-file">
+    </div>
+    <hr />
+
+    <!--- JSON FILE DATA TABLE-->
+    <div class="container" id="js-json-read-data-container">
+        <table id="json-read-data-table">
+            <thead>
+                <tr>
+                    <th>Key</th>
+                    <th>Type</th>
+                    <th>Options</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <!----ADD A ROW TO TABLE -->
+        <div id="add-row">
+            <button class="add-attr-button" id="add-row-button" onclick="addRow(event)">+ new attr</button>
+        </div>
+    </div>
+    <!--- END TABLE -->
+
+    <!--- ADD A ROW EDITOR  -->
+    <div class="toggle-display add-row-editor" id="add-row-editor-container">
+        <div class="add-row-header">
+            <div class="editor-title">Add a Row</div>
+            <div class="button-close" id="add-row-editor-close-button" onclick="closeAddRowEditor()">X</div>
+        </div>
+        <div class="add-row-editor-content">
+            Key: <input id="add-row-key-name" value="" />
+            <br />
+            Type: 
+            <select id="add-row-type">
+                <option value="integer" selected="integer">integer</option>
+                <option value="string">string</option>
+                <option value="select">select</option>
+                <option value="email">email</option>
+                <option value="float">float</option>
+                <option value="datetime">datetime</option>
+            </select>
+            <br />
+            <div class="toggle-display" id="add-row-options">
+                Options: 
+                <div id="add-row-inputs">
+
+                </div>
+                <button class="add-row-option" onclick="addRowAddOption()">+ option</button>
+            </div>
+            <br />
+            <button class="btn" onclick="submitAddRow()">+ add row</button>
+        </div>
+    </div> 
+    <!-- END ADD A ROW EDITOR //-->
+
+    <!--- EDIT A ROW EDITOR -->
+    <div class="edit-row-editor toggle-display" id="edit-row-editor-container">
+        <div class="edit-row-header">
+            <div class="editor-title">Modify Attribute - <span id="edit-attr-key"></span></div>
+            <div class="button-close" onclick="closeEditRowEditor()">X</div>
+        </div>
+        <div class="edit-row-editor-content">
+            <div class="form-group">
+                <label for="key-name">Key:</label>
+                <input id="edit-row-key-name" name="key-name" />
+            </div>
+            <div class="form-group">
+                <label for="key-type">Type:</label>
+                <select name="key-type" id="edit-row-type">
+                    <option value="integer">integer</option>
+                    <option value="string">string</option>
+                    <option value="select">select</option>
+                    <option value="email">email</option>
+                    <option value="float">float</option>
+                    <option value="datetime">datetime</option>
+                </select>
+            </div>
+            <div class="form-group toggle-display" id="edit-row-options">
+                <div class="subtitle">Options: </div>
+                <div id="edit-row-inputs"></div>
+                <button class="edit-row-add-option" onclick="editRowAddOption()">+ option</button>
+            </div>
+            <div class="submit" id="edit-row-submit-container">
+                <button class="btn" onclick="editRowSubmit()">Submit Changes</button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    <!--- END EDIT A ROW EDITOR //-->
+
+    <script>
+
+    // ***** LOAD THE TABLE AND FILE ***** //
+        let JSON_FILE ={"attributes": {"id": {"type": "integer"},"name": {"type": "string"},"account": {"type": "select", "options": ["guest","member", "admin"]},"email": {"type": "email"},"balance": {"type": "float"},"created_at": {"type": "datetime"}}};
+        $("#input-file").change(function(e){ // This uses the Input File
+            $(document).ready(function(){
+                let file = e.target.files[0];
+                let fileName = e.target.files[0].name;
+                
+                var reader = new FileReader();
+                reader.readAsText(file);
+
+                reader.onload = () => {
+                    let json_string = reader.result;
+                    let json_obj = JSON.parse(json_string);
+                    //let json_obj = JSON_FILE
+                    $("#json-read-data-table").data("json-file", json_obj);
+                    let jsonObjKeys =Object.keys(json_obj.attributes);
+                    let jsonObjValues = Object.values(json_obj.attributes);
+                    
+                    jsonObjKeys.map((key, index) => {
+                        let idKey = index;
+                        let json_key = key;
+                        let json_type = jsonObjValues[index].type;
+                        let json_type_select_options = null;
+                        if(json_type === "select"){
+                            json_type_select_options = jsonObjValues[index].options;
+                        }
+                        $("#json-read-data-table").append(`<tr class="row-data" id="row-id-${idKey}"><td class="key" id="key-id-${idKey}">${json_key}</td><td class="type" id="type-id-${idKey}">${json_type}</td><td class="options" id="options-id-${idKey}">-</td><td style="border:0" class="edit"><button onclick="editTableRow(event)">edit</button></td><td style="border:0" class="delete"><button onclick="deleteTableRow(event)">delete</button></td></tr>`);
+                        if(json_type === "select"){
+                            $(`#options-id-${idKey}`).empty()
+                            $(`#options-id-${idKey}`).append(`<select id="table-select-options-id-${idKey}"></select>`);
+                            json_type_select_options.map(option => {
+                                $(`#table-select-options-id-${idKey}`).append(`<option value="${option}">${option}</option>`);
+                            })
+                        }
+                    })
+                    $("#add-row").show()
+                }
+                
+                $('#add-row-key-name').val("");
+                $('#add-row-type option[value="integer"]').prop("selected", true);
+                $('#edit-row-type option[value="integer"]').prop("selected", true);
+                $('#edit-row-key-name').val("");
+            })
+        })
+    // **** EDIT A ROW BUTTON *** /
+        const editTableRow = event => {
+            let json_obj = $("#json-read-data-table").data("json-file");
+            let edit_button = event.target;
+            //edit_button.disabled = true;
+            let edit_buttonTd = edit_button.parentNode;
+            let tableRowId = edit_buttonTd.parentNode.id;
+            let thisRowID = tableRowId.substring(7);
+            $("#edit-row-editor-container").data("thisRowID", parseInt(thisRowID))
+
+            $("tr").each(function(){
+                $(this).css("background-color", "darkmagenta");
+            })
+            $(`#${tableRowId}`).css("background-color", "red");
+            let keyValue =  $(`#${tableRowId}`).find('.key').text();
+            $("#edit-attr-key").text(`${keyValue}`)
+            let typeValue = $(`#${tableRowId}`).find('.type').text();
+            let optionsValue = $(`#${tableRowId}`).find('.options').text();
+            let optionsValueArray = [];
+            if(optionsValue !== "-"){
+                optionsValue = "has options";
+                $(`#${tableRowId}`).find("option").each(function(){
+                    optionsValueArray.push($(this).val());
+                })
+            }
+            else if(optionsValue === "-"){
+                optionsValue = null;
+            }
+
+            //If there are options, store their data on the edit-row-options div
+            if(optionsValue !== null){
+                $("edit-row-options").data("options", optionsValueArray);
+            }
+
+            $("#edit-row-editor-container").show();
+
+            // Populate the Modify Attribute Table
+            $("#edit-row-key-name").val(`${keyValue}`);
+            $("#edit-row-key-name").prop("disabled", true);
+            $(`#edit-row-type option[value="${typeValue}"]`).prop("selected", true);
+            
+            // If type is "select" add the options
+            if($("#edit-row-type").val() === "select" && optionsValue !== null){
+                $("#edit-row-options").show();
+                optionsValueArray.map(option => {
+                    $("#edit-row-inputs").append(`<input type="text" value="${option}" /><button class="del-edit-row-option" onclick="deleteEditRowEditorOption(event)">delete</button><br>`);
+                })
+            }
+            else if($("edit-row-type").val() !== "select"){
+                $("#edit-row-inputs").empty();
+                $("#edit-row-options").hide()
+            }
+
+            // Add the Options if the type is changed to "select"
+            $("#edit-row-type").change(function(){
+                if($(this).val() === "select"){
+                    $("#edit-row-options").show();
+                    
+                }
+                else if($(this).val() !== "select"){
+                    $("#edit-row-inputs").empty()
+                    $("#edit-row-options").hide();
+                }
+            })
+        }
+
+        const editRowAddOption = () => {
+            $("#edit-row-inputs").append('<input type="text" /><button class="del-edit-row-option" onclick="deleteEditRowEditorOption(event)">delete</button><br />')
+        }
+        const deleteEditRowEditorOption = (event) => {
+            let button = event.target;
+            button.previousSibling.remove();
+            button.nextSibling.remove();
+            button.remove();
+            
+        }
+        const closeEditRowEditor = () => {
+            $("#edit-row-inputs").empty();
+            $("#edit-row-key-name").val("");
+            $("#edit-row-editor-container").hide();
+            $("tr").each(function(){
+                $(this).css("background-color", "darkmagenta");
+            })
+        }
+
+        // *** SUBMIT Modify Attribute *** //
+        const editRowSubmit = () => {
+            let thisRowID = $("#edit-row-editor-container").data("thisRowID");
+            let editRowKeyName = $("#edit-row-key-name").val();
+            let editRowType = $("#edit-row-type").val();
+            let editTypeOptions = [];
+            let editTypeOptionsFormErrors = [];
+
+            $("#edit-row-inputs > input").each(function(){
+                editTypeOptions.push($(this).val())
+            });
+
+            // Validate the select options are not blank
+            const validateEditRowOptions = (currentValue) => currentValue !== "";
+            
+            if(editRowType === "select" && editTypeOptions.length === 0){
+                alert("Please enter an option for type Select");
+                return
+            }
+            else if(editRowType === "select" && editTypeOptions.every(validateEditRowOptions) === false){
+                console.log("An Option Field is Blank!");
+                $("#edit-row-inputs > input").each(function(){
+                    if($(this).val() === ""){
+                        $(this).css("border", "1px solid red");
+                        alert("Option cannot be empty to submit form");
+                    }
+                })
+                return
+            }
+            
+            if(editTypeOptions.length === 0 && editRowType !== "select"){
+                let json_obj = $("#json-read-data-table").data("json-file");
+                $(`#row-id-${thisRowID}`).find(".key").text(editRowKeyName);
+                $(`#row-id-${thisRowID}`).find(".type").text(editRowType);
+
+                console.log("Updating JSON File");
+                json_obj["attributes"][`${editRowKeyName}`] = {
+                    "type": editRowType
+                }
+                console.log("Edited JSON File: ", json_obj);
+                $("#json-read-data-table").data("json-file", json_obj);
+                $("#edit-row-editor-container").hide();
+            }
+            else if(editTypeOptions.length > 0 && editRowType === "select") {
+                let json_obj = $("#json-read-data-table").data("json-file");
+                $(`#row-id-${thisRowID}`).find(".key").text(editRowKeyName);
+                $(`#row-id-${thisRowID}`).find(".type").text(editRowType);
+                $(`#row-id-${thisRowID}`).find(".options").empty();
+                $(`#row-id-${thisRowID}`).find(".options").append(`<select id="table-select-options-id-${thisRowID}"></select>`);
+                editTypeOptions.map(option => {
+                    $(`#table-select-options-id-${thisRowID}`).append(`<option value="${option}">${option}</option>`)
+                })
+                $("#edit-row-inputs").empty();
+                $("#edit-row-editor").hide();
+            }
+            console.log("Submit")
+        }
+       
+
+    // **** DELETE A ROW BUTTON ***/
+        const deleteTableRow = event => {
+            let json_obj = $("#json-read-data-table").data("json-file");
+            let button = event.target;
+            let button_td = button.parentNode;
+            let edit_button_td = button_td.previousSibling;
+            let options = edit_button_td.previousSibling;
+            let type = options.previousSibling;
+            let key = type.previousSibling.innerHTML;
+            let table_row = button_td.parentNode;
+
+            console.log(`Deleting ${key} from JSON File: `);
+            delete json_obj["attributes"][`${key}`];
+            console.log("Updated JSON File: ", json_obj);
+            $("#json-read-data-table").data("json-file", json_obj);
+            table_row.remove();
+        }
+        
+    // **** ADD A ROW BUTTON ***/
+        const addRow = event => {
+            $("#add-row-button").attr("disabled", true);
+            $("#add-row-editor-container").show();
+            $("#add-row-type").change(function(){
+                if($("#add-row-type").val() === "select"){
+                    $("#add-row-options").show()
+                    console.log("select")
+                }
+                else if($("#add-row-type").val() !== "select"){
+                    $("#add-row-options").hide()
+                    $("#add-row-inputs").empty()
+                }
+            })
+            $("tr").each(function(){
+                $(this).css("background-color", "darkmagenta");
+            })
+        }
+
+    // **** ADD ROW EDITOR FUNCTIONS ***/
+        // closes the Editor
+        const closeAddRowEditor = () => {
+            $("#add-row-key-name").val("");
+            $("#add-row-key-name").css("border", "1px solid grey");
+            $("#add-row-inputs").empty();
+            $('#add-row-type option[value="integer"]').prop("selected", true);
+            $('#add-row-editor-container').hide();
+            $('#add-row-options').hide();
+            $('#add-row-button').prop("disabled", false);
+        }
+
+        // adds another option input
+        const addRowAddOption = () => {
+            $("#add-row-inputs").append('<input type="text" /><button class="del-add-row-option" onclick="deleteAddRowEditorOption(event)">delete</button><br />')
+        }
+
+        const deleteAddRowEditorOption = (event) => {
+            let button = event.target;
+            button.previousSibling.remove();
+            button.nextSibling.remove();
+            button.remove();
+            
+        }
+
+        // This function submits the data to table and json
+        const submitAddRow = () => {
+            let idKey = 0;
+            let addRowKeyName = $("#add-row-key-name").val();
+            let addRowType = $("#add-row-type").val();
+            let addTypeOptions = [];
+
+            $("tbody > tr").each(function(){
+                idKey++;
+            })
+            $("#add-row-inputs > input").each(function(){
+                addTypeOptions.push($(this).val());
+            })
+            
+            // Validate the Key is not Blank
+            if(addRowKeyName === ""){
+                $("#add-row-key-name").css("border", "1px solid red");
+                alert("Key must be a valid string, not empty");
+                return;
+            }
+            else if(addRowKeyName !== ""){
+                $("#add-row-key-name").css("border", "1px solid grey");
+            }
+
+            // Validate if Key exists already on table
+            let table_keys = [];
+            let has_key = false;
+            $(".key").each(function(){
+                table_keys.push($(this).text());
+            })
+            //console.log(table_keys)
+            table_keys.map(key => {
+                    if(key === addRowKeyName){
+                        has_key = true;    
+                    }
+                })
+            if(has_key === true){
+                alert("Key already exists!");
+                $("#add-row-key-name").css("border", "1px solid red")
+                return;
+            }
+
+            // Validate the select options are not blank
+            const validateAddRowOptions = (currentValue) => currentValue !== "";
+            const validateAddRowOptionsAreNotSame = (currentValue) => currentValue === currentValue;
+            console.log(addTypeOptions.every(validateAddRowOptionsAreNotSame));
+
+            if(addRowType === "select" && addTypeOptions.length === 0){
+                alert("Please enter an option for type Select");
+                return
+            }
+            else if(addRowType === "select" && addTypeOptions.every(validateAddRowOptions) === false){
+                console.log("An Option Field is Blank!");
+                $("#add-row-inputs > input").each(function(){
+                    if($(this).val() === ""){
+                        $(this).css("border", "1px solid red");
+                        alert("Option cannot be empty to submit form");
+                    }
+                })
+                return
+            }
+            /*else if(addRowType === "select" && addTypeOptions.every(validateAddRowOptionsAreNotSame) === true){
+                console.log("An option field is a duplicate");
+                alert("Option cannot contain a duplicate");
+                return
+            }*/
+
+            // Submit the form data for all but select
+            if(addTypeOptions.length === 0 && addRowType !== "select"){
+                // Add to JSON FILE
+                let json_obj = $("#json-read-data-table").data("json-file");
+                json_obj["attributes"][`${addRowKeyName}`] = {
+                    "type": addRowType
+                }
+                console.log("Updating JSON FILE: ", json_obj)
+                // Add to Table
+                $("#json-read-data-table").append(`<tr class="row-data" id="row-id-${idKey}"><td class="key" id="key-id-${idKey}">${addRowKeyName}</td><td class="type" id="type-id-${idKey}">${addRowType}</td><td class="options" id="options-id-${idKey}">-</td><td style="border:0" class="edit"><button onclick="editTableRow(event)">edit</button></td><td style="border:0" class="delete"><button onclick="deleteTableRow(event)">delete</button></td></tr>`);
+                $("#json-read-data-table").data("json-file", json_obj);
+            }
+            // Submit the form data for select
+            else if(addTypeOptions.length > 0 && addRowType === "select"){
+                let json_obj = $("#json-read-data-table").data("json-file");
+                json_obj["attributes"][`${addRowKeyName}`] = {
+                    "type": addRowType,
+                    "options": addTypeOptions
+                }
+                console.log("Updating JSON FILE: ", json_obj)
+                $("#json-read-data-table").append(`<tr class="row-data" id="row-id-${idKey}"><td class="key" id="key-id-${idKey}">${addRowKeyName}</td><td class="type" id="type-id-${idKey}">${addRowType}</td><td class="options" id="options-id-${idKey}"><select id="table-select-options-id-${idKey}"></select></td><td style="border:0" class="edit"><button onclick="editTableRow(event)">edit</button></td><td style="border:0" class="delete"><button onclick="deleteTableRow(event)">delete</button></td></tr>`)
+                $("#json-read-data-table").data("json-file", json_obj);
+                addTypeOptions.map(option => {
+                    $(`#table-select-options-id-${idKey}`).append(`<option value="${option}">${option}</option>`)
+                })
+            }
+            $("#add-row-key-name").val("");
+            $("#add-row-inputs").empty();
+            $('#add-row-type option[value="integer"]').prop("selected", true);
+            $('#add-row-options').hide();
+            $("#add-row-editor-container").hide();
+            $("#add-row-button").attr("disabled", false)
+        }
+    </script>
+
+</body>
+</html>
