@@ -1,3 +1,3 @@
 # Attributes JSON Editor
 
-![](wireframes/JSON_Editor.png);
+![](/wireframes/JSON_Editor.png)
